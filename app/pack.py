@@ -4,6 +4,8 @@ import re
 import unittest
 import logging
 import json
+import io
+import csv
 
 
 @dataclass
@@ -47,20 +49,28 @@ class PackFormatter:
         return json.dumps(data, indent=2)
 
     @staticmethod
-    def to_csv(packs: List[Pack]) -> str:
+    def field_to_csv(val):
+        if isinstance(val, list):
+            return ",".join(str(v) for v in val)
+        if hasattr(val, "value"):
+            return str(val.value)
+        return "" if val is None else str(val)
+
+    @staticmethod
+    def to_csv(cards: List[Pack]) -> str:
+
         logging.info("Formatting card data to CSV...")
-        if not packs:
+        if not cards:
             return ""
 
         header_row = [field.name for field in fields(Pack)]
-        output = [",".join(header_row)]
-
-        # Get values using getattr for each field in the header
-        for pack in packs:
-            row_values = [str(getattr(pack, header)) for header in header_row]
-            output.append(",".join(row_values))
-
-        return "\n".join(output)
+        output = io.StringIO()
+        writer = csv.writer(output, quoting=csv.QUOTE_ALL)
+        writer.writerow(header_row)
+        for card in cards:
+            row_values = [PackFormatter.field_to_csv(getattr(card, header)) for header in header_row]
+            writer.writerow(row_values)
+        return output.getvalue().strip()
 
     @classmethod
     def format(cls, packs: List[Pack], format_type: str) -> str:

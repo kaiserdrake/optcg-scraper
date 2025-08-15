@@ -6,6 +6,8 @@ import requests
 import json
 import logging
 import os
+import io
+import csv
 
 
 @dataclass
@@ -164,20 +166,28 @@ class CardFormatter:
         return json.dumps(data, indent=2)
 
     @staticmethod
+    def field_to_csv(val):
+        if isinstance(val, list):
+            return ",".join(str(v) for v in val)
+        if hasattr(val, "value"):
+            return str(val.value)
+        return "" if val is None else str(val)
+
+    @staticmethod
     def to_csv(cards: List[Card]) -> str:
+
         logging.info("Formatting card data to CSV...")
         if not cards:
             return ""
 
         header_row = [field.name for field in fields(Card)]
-        output = [",".join(header_row)]
-
-        # Get values using getattr for each field in the header
+        output = io.StringIO()
+        writer = csv.writer(output, quoting=csv.QUOTE_ALL)
+        writer.writerow(header_row)
         for card in cards:
-            row_values = [str(getattr(card, header)) for header in header_row]
-            output.append(",".join(row_values))
-
-        return "\n".join(output)
+            row_values = [CardFormatter.field_to_csv(getattr(card, header)) for header in header_row]
+            writer.writerow(row_values)
+        return output.getvalue().strip()
 
     @staticmethod
     def to_img(cards: List[Card]) -> str:
