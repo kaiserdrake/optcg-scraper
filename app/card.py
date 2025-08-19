@@ -82,11 +82,15 @@ class Card:
             return None
 
     @staticmethod
-    def get_tail_data(tree, anchor):
+    def get_text_after_anchor(tree, xpath_to_anchor, delimiter=' '):
         try:
-            element = tree.xpath(anchor)[0]
-            return element.tail.strip()
-        except (IndexError, AttributeError):
+            text_nodes = tree.xpath(f"{xpath_to_anchor}/following-sibling::*/text() | {xpath_to_anchor}/following-sibling::text()")
+
+            # Clean up and join the text parts
+            clean_parts = [t.strip() for t in text_nodes if t.strip()]
+            full_text = delimiter.join(clean_parts)
+            return full_text if full_text else None
+        except Exception:
             return None
 
     @classmethod
@@ -106,8 +110,8 @@ class Card:
                     logging.error(f"Warning: Unknown attribute found: '{clean_attr_str}'")
                     attributes_list.append(clean_attr_str)
 
-        power_val = Card.get_tail_data(tree, './/div[@class="power"]/h3')
-        counter_val = Card.get_tail_data(tree, './/div[@class="counter"]/h3')
+        power_val = Card.get_text_after_anchor(tree, './/div[@class="power"]/h3')
+        counter_val = Card.get_text_after_anchor(tree, './/div[@class="counter"]/h3')
         img_url = Card.get_data(tree, './/img[@class="lazy"]/@data-src')
 
         try:
@@ -118,14 +122,15 @@ class Card:
                 'category': Card.Category(card_info[2].strip()) if len(card_info) > 0 else None,
                 'name': Card.get_data(tree, './/div[@class="cardName"]/text()'),
                 'img_url': urljoin(base_url, img_url),
-                'cost': Card.get_tail_data(tree, './/div[@class="cost"]/h3'),
+                'cost': Card.get_text_after_anchor(tree, './/div[@class="cost"]/h3'),
                 'attributes': attributes_list or None,
                 'power': None if power_val == '-' else power_val,
                 'counter': None if counter_val == '-' else counter_val,
-                'color': Card.get_tail_data(tree, './/div[@class="color"]/h3'),
-                'block': Card.get_tail_data(tree, './/div[@class="block"]/h3'),
-                'types': Card.get_tail_data(tree, './/div[@class="feature"]/h3'),
-                'effect': Card.get_tail_data(tree, './/div[@class="text"]/h3'),
+                'color': Card.get_text_after_anchor(tree, './/div[@class="color"]/h3'),
+                'block': Card.get_text_after_anchor(tree, './/div[@class="block"]/h3'),
+                'types': Card.get_text_after_anchor(tree, './/div[@class="feature"]/h3', delimiter='\n'),
+                'effect': Card.get_text_after_anchor(tree, './/div[@class="text"]/h3', delimiter='\n'),
+                'trigger': Card.get_text_after_anchor(tree, './/div[@class="text"]/h3', delimiter='\n'),
             }
             logging.info(f"Adding card: {data['card_code']}, {data['rarity']}, {data['category']}, {data['name']}")
         except (IndexError, ValueError, KeyError):
