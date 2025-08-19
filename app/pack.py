@@ -25,8 +25,10 @@ class Pack:
             prefix, name, code = match.groups()
             code = code.strip('[]')
         else:
-            # fallback or error handling
-            raise ValueError(f"Invalid title format: {title}")
+            # Handle alternative format: title only
+            name = sanitized_title.strip()
+            prefix = 'None'
+            code = 'None'
         logging.info(f"Adding pack: {series}, {prefix.strip()}, {name.strip()}, {code.strip()}")
         return cls(series, prefix.strip(), name.strip(), code.strip())
 
@@ -99,11 +101,14 @@ class TestPack(unittest.TestCase):
         self.assertEqual(pack.name, "Starter Deck")
         self.assertEqual(pack.code, "SD01")
 
-    def test_from_title_invalid(self):
-        title = "Invalid Title Format"
+    def test_from_title_nocode(self):
+        title = "Title"
         series = "Series 1"
-        with self.assertRaises(ValueError):
-            Pack.from_title(title, series)
+        pack = Pack.from_title(title, series)
+        self.assertEqual(pack.series, series)
+        self.assertEqual(pack.prefix, "None")
+        self.assertEqual(pack.name, "Title")
+        self.assertEqual(pack.code, "None")
 
 
 if __name__ == "__main__":
