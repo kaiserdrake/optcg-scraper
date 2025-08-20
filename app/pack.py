@@ -26,9 +26,8 @@ class Pack:
             code = code.strip('[]')
         else:
             # Handle alternative format: title only
-            name = sanitized_title.strip()
+            code = name = sanitized_title.strip()
             prefix = 'None'
-            code = 'None'
         logging.info(f"Adding pack: {series}, {prefix.strip()}, {name.strip()}, {code.strip()}")
         return cls(series, prefix.strip(), name.strip(), code.strip())
 
@@ -108,7 +107,7 @@ class TestPack(unittest.TestCase):
         self.assertEqual(pack.series, series)
         self.assertEqual(pack.prefix, "None")
         self.assertEqual(pack.name, "Title")
-        self.assertEqual(pack.code, "None")
+        self.assertEqual(pack.code, "Title")
 
 
 if __name__ == "__main__":

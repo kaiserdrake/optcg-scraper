@@ -48,7 +48,12 @@ When `img` format is specified, the images of the cards will be downloaded to
 the `downloaded_images` directory.
 But since we are using Docker, the directory must be mounted as follows:
 ```sh
-docker run -v $(pwd)/downloaded_images:/tmp/downloaded_images optcg-scraper cards <series_id> --format img
+docker run -v $(pwd):/tmp optcg-scraper cards <series_id> --format img
+```
+
+To store all the cards in all packs, you can execute the following command:
+```sh
+docker run -v $(pwd):/tmp optcg-scraper packs all --format csv
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>

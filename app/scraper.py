@@ -5,6 +5,7 @@ from pack import Pack, PackFormatter
 from card import Card, CardFormatter
 import logging
 import argparse
+import os
 
 __is_debug__ = False  # set --debug via command line argument
 
@@ -97,9 +98,18 @@ def parse_args():
         dest='command',
         required=True,
         help="The command to execute (e.g. 'packs', 'cards').")
-    subparsers.add_parser('packs', help='List all available packs.', parents=[parent_parser])
-    cards_parser = subparsers.add_parser('cards', help='List all cards available cards.', parents=[parent_parser])
 
+    packs_parser = subparsers.add_parser('packs', help='List all available packs.', parents=[parent_parser])
+    packs_parser.add_argument(
+        'action',
+        type=str,
+        nargs='?',  # This makes the argument optional
+        choices=['all'],
+        default=None,
+        help='Use "all" to fetch all cards from every pack.'
+    )
+
+    cards_parser = subparsers.add_parser('cards', help='List all cards available cards.', parents=[parent_parser])
     cards_parser.add_argument(
         'series_id',
         type=str,
@@ -124,9 +134,56 @@ if __name__ == "__main__":
     scraper = OptcgScraper()
 
     if args.command == 'packs':
-        packs = scraper.fetch_packs()
-        packs_text = PackFormatter.format(packs, args.format)
-        print(packs_text)
+        if args.action == 'all':
+
+            logging.info("Fetching all available pack metadata...")
+            available_packs = scraper.fetch_packs()
+
+            if args.format == 'img':
+                output_dir = "/tmp/downloaded_images"
+                logging.info(f"Image download directory is {output_dir}")
+            else:
+                output_dir = "/tmp/cards/"
+                os.makedirs(output_dir, exist_ok=True)
+                logging.info(f"Output directory is set to {output_dir}")
+
+            logging.info(f"Beginning to fetch cards for all {len(available_packs)} packs found...")
+            for pack in available_packs:
+                if not pack.series or not pack.code or pack.code == "None":
+                    logging.warning(f"Skipping pack '{pack.name}' due to missing series ID or code.")
+                    continue
+
+                logging.info(f"Fetching cards for {pack.code} - {pack.name}...")
+                cards_from_pack = scraper.fetch_cards(pack.series)
+
+                if not cards_from_pack:
+                    logging.warning(f"No cards found for pack {pack.code}. Skipping file creation.")
+                    continue
+
+                # The 'img' format handles its own saving to /tmp/downloaded_images
+                if args.format == 'img':
+                    logging.info(f"Downloading images for pack {pack.code}...")
+                    CardFormatter.format(cards_from_pack, 'img')
+                else:
+                    # For other formats, save the file to /tmp/cards/
+                    formatted_cards = CardFormatter.format(cards_from_pack, args.format)
+                    filename = f"{pack.code}.{args.format}"
+                    filepath = os.path.join(output_dir, filename)
+
+                    try:
+                        with open(filepath, 'w', encoding='utf-8') as f:
+                            f.write(formatted_cards)
+                        logging.info(f"Successfully saved cards to {filepath}")
+                    except IOError as e:
+                        logging.error(f"Failed to write to file {filepath}: {e}")
+
+            print(f"\nProcessing complete. Files saved in {output_dir}")
+
+        else:
+            packs = scraper.fetch_packs()
+            packs_text = PackFormatter.format(packs, args.format)
+            print(packs_text)
+
     elif args.command == 'cards':
         cards = scraper.fetch_cards(args.series_id)
         cards_output = CardFormatter.format(cards, args.format)
