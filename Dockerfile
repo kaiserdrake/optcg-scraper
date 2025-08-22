@@ -1,4 +1,3 @@
-# docker build -t selenium_chrome_full:latest .
 FROM python:3.12.2 AS builder
 
 WORKDIR /app
