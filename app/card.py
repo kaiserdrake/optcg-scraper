@@ -139,6 +139,8 @@ class Card:
         power_val = Card.get_text_after_anchor(tree, './/div[@class="power"]/h3')
         counter_val = Card.get_text_after_anchor(tree, './/div[@class="counter"]/h3')
         img_url = Card.get_xpath_value(tree, './/img[@class="lazy"]/@data-src')
+        if img_url and '?' in img_url:
+            img_url = img_url.split('?')[0]
 
         try:
             effect_element = Card.get_xpath_value(tree, './/div[@class="text"]', get_text=False)
