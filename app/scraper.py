@@ -1,11 +1,12 @@
 from lxml import html
 import requests_cache
 from collections import deque
-from pack import Pack, PackFormatter
-from card import Card, CardFormatter
 import logging
 import argparse
 import os
+
+from .pack import Pack, PackFormatter
+from .card import Card, CardFormatter
 
 __is_debug__ = False  # set --debug via command line argument
 
@@ -119,10 +120,11 @@ def parse_args():
     return args
 
 
-if __name__ == "__main__":
-
-    args = parse_args()
-
+def run_scraper(args):
+    """
+    Main logic for the scraper, callable from other scripts.
+    """
+    global __is_debug__
     if args.debug:
         __is_debug__ = True
         logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -135,7 +137,6 @@ if __name__ == "__main__":
 
     if args.command == 'packs':
         if args.action == 'all':
-
             logging.info("Fetching all available pack metadata...")
             available_packs = scraper.fetch_packs()
 
@@ -152,24 +153,17 @@ if __name__ == "__main__":
                 if not pack.series or not pack.code or pack.code == "None":
                     logging.warning(f"Skipping pack '{pack.name}' due to missing series ID or code.")
                     continue
-
                 logging.info(f"Fetching cards for {pack.code} - {pack.name}...")
                 cards_from_pack = scraper.fetch_cards(pack.series)
-
                 if not cards_from_pack:
                     logging.warning(f"No cards found for pack {pack.code}. Skipping file creation.")
                     continue
-
-                # The 'img' format handles its own saving to /tmp/downloaded_images
                 if args.format == 'img':
-                    logging.info(f"Downloading images for pack {pack.code}...")
-                    CardFormatter.format(cards_from_pack, 'img')
+                    CardFormatter.format(list(cards_from_pack), 'img')
                 else:
-                    # For other formats, save the file to /tmp/cards/
-                    formatted_cards = CardFormatter.format(cards_from_pack, args.format)
+                    formatted_cards = CardFormatter.format(list(cards_from_pack), args.format)
                     filename = f"{pack.code}.{args.format}"
                     filepath = os.path.join(output_dir, filename)
-
                     try:
                         with open(filepath, 'w', encoding='utf-8') as f:
                             f.write(formatted_cards)
@@ -177,14 +171,18 @@ if __name__ == "__main__":
                     except IOError as e:
                         logging.error(f"Failed to write to file {filepath}: {e}")
 
-            print(f"\nProcessing complete. Files saved in {output_dir}")
-
+            return f"Processing complete. Files saved in {output_dir}"
         else:
             packs = scraper.fetch_packs()
-            packs_text = PackFormatter.format(packs, args.format)
-            print(packs_text)
+            return PackFormatter.format(list(packs), args.format)
 
     elif args.command == 'cards':
         cards = scraper.fetch_cards(args.series_id)
-        cards_output = CardFormatter.format(cards, args.format)
-        print(cards_output)
+        return CardFormatter.format(list(cards), args.format)
+
+
+if __name__ == "__main__":
+    args = parse_args()
+    result = run_scraper(args)
+    if result:
+        print(result)

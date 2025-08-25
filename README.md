@@ -24,39 +24,49 @@ To get a local copy up and running follow these simple example steps.
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-To get the list of packs and their corresponding series_id, you can execute the following command:
+### As dockerized webservice
+
+Run the container. You need to do two important things here:
+ * `-p 38080:8080`: This maps port 38080 on your local machine to port 8080 inside the container, so you can access the web service.
+ * `-v "$(pwd)/output:/tmp"`: It creates a directory mapping current folder and links it to the /tmp directory inside the container. This allows you to access the CSV files or downloaded images that the scraper saves.
+
 ```sh
-docker run optcg-scraper packs
-```
-Alternatively, you can specify the output format as JSON:
-```sh
-docker run optcg-scraper packs --format json
+docker run -p 38080:8080 -v "$(pwd)/output:/tmp" --name optcg-api optcg-scraper
 ```
 
-For packs, the supported output formats are `text`, `csv` and `json`.
+Your web service is now running! You can access it from your web browser or a tool like curl.
 
-To get the list of cards in a specific pack, you can execute the following command:
+List all packs (JSON):
 ```sh
-docker run optcg-scraper cards <series_id>
-```
-Similarly, you can specify the output format as JSON:
-```sh
-docker run optcg-scraper cards <series_id> --format json
-```
-For cards, supported output formats are `text`, `csv`, `json` and `img`.
-When `img` format is specified, the images of the cards will be downloaded to
-the `downloaded_images` directory.
-But since we are using Docker, the directory must be mounted as follows:
-```sh
-docker run -v $(pwd):/tmp optcg-scraper cards <series_id> --format img
+curl http://localhost:38080/packs?format=json
 ```
 
-To store all the cards in all packs, you can execute the following command:
+Get cards for a specific pack (OP-01):
+
 ```sh
-docker run -v $(pwd):/tmp optcg-scraper packs all --format csv
+curl http://localhost:38080/cards/556101?format=json
+```
+Trigger the "scrape all" process:
+This will start the long-running process of scraping all cards. The files will appear in the output/cards or output/downloaded_images directory on your local machine.
+
+```sh
+curl http://localhost:38080/packs/all?format=csv
 ```
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+### Locally
+
+The project is now as a package (app), you should run the scraper as a module from the root directory of the project.
+Use the `python -m` flag.
+
+For example, to list all packs:
+```sh
+python -m app.scraper packs
+```
+To list all cards in a specific pack:
+```sh
+python -m app.scraper cards <series_id>
+```
 
 
 <!-- LICENSE -->
