@@ -16,7 +16,7 @@ To get a local copy up and running follow these simple example steps.
    ```
 2. Build the docker image
    ```sh
-   docker build -t optcg-scraper .
+   docker build -t ghcr.io/kaiserdrake/optcg-scraper .
    ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -31,7 +31,7 @@ Run the container. You need to do two important things here:
  * `-v "$(pwd)/output:/tmp"`: It creates a directory mapping current folder and links it to the /tmp directory inside the container. This allows you to access the CSV files or downloaded images that the scraper saves.
 
 ```sh
-docker run -p 38080:8080 -v "$(pwd)/output:/tmp" --name optcg-api optcg-scraper
+docker run -p 38080:8080 -v "$(pwd)/output:/tmp" --name optcg-api ghcr.io/kaiserdrake/optcg-scraper
 ```
 
 Your web service is now running! You can access it from your web browser or a tool like curl.
